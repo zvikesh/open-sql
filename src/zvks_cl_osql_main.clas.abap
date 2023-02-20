@@ -13,7 +13,7 @@ ENDCLASS.
 
 
 
-CLASS ZVKS_CL_OSQL_MAIN IMPLEMENTATION.
+CLASS zvks_cl_osql_main IMPLEMENTATION.
 
 
   METHOD if_oo_adt_classrun~main.
@@ -37,6 +37,9 @@ CLASS ZVKS_CL_OSQL_MAIN IMPLEMENTATION.
 
     "OOABAP
     "NEW zvks_cl_osql_ooabap( )->main( ).
+
+    "Vs
+    "NEW zvks_cl_osql_vs( )->main( ).
 
     "EML
     "zvks_cl_osql_eml=>execute( ).

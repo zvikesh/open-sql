@@ -98,23 +98,11 @@ CLASS zvks_cl_osql_itab DEFINITION
       IMPORTING
         out TYPE REF TO if_oo_adt_classrun_out.
 
-
-
-
-
-
-
     METHODS cte
       IMPORTING
         out TYPE REF TO if_oo_adt_classrun_out.
 
-
-
     METHODS switch_and_cond
-      IMPORTING
-        out TYPE REF TO if_oo_adt_classrun_out.
-
-    METHODS switch
       IMPORTING
         out TYPE REF TO if_oo_adt_classrun_out.
 
@@ -125,6 +113,18 @@ CLASS zvks_cl_osql_itab DEFINITION
     METHODS summary
       IMPORTING
         out TYPE REF TO if_oo_adt_classrun_out.
+
+    METHODS return_h
+      RETURNING
+        VALUE(rv_h) TYPE shkzg.
+
+    METHODS return_credit
+      RETURNING
+        VALUE(rv_credit) TYPE string.
+
+    METHODS return_debit
+      RETURNING
+        VALUE(rv_debit) TYPE string.
 
 ENDCLASS.
 
@@ -323,9 +323,7 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD switch.
 
-  ENDMETHOD.
 
   METHOD return_lt_flight.
 
@@ -438,14 +436,30 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
     "----------------------------------------------------------------"
     " FILTER                                                         "
     "----------------------------------------------------------------"
+    " Copy all records of one table to another table using a filter
+    " table
 
     "----------------------------------------------------------------"
     " FOR + FILTER                                                   "
     "----------------------------------------------------------------"
+    " If they source table and target table are of different types.
+    " OR additional WHERE condition and Built In functions are
+    " required to be implemented.
 
     "----------------------------------------------------------------"
     " REDUCE                                                         "
     "----------------------------------------------------------------"
+    " To aggregated the column of a table, replacing LOOP or COLLECT
+    " statement.
+
+    "----------------------------------------------------------------"
+    " SWITCH & COND                                                  "
+    "----------------------------------------------------------------"
+    " SWITCH: Case differentiation.
+    " COND:   Conditional differentiation.
+    " - Can be used within FOR operator like built-in fns.
+    " - Can consume REDUCE operator.
+    " - Can consume built-in fns.
 
     "Performance based selection
     "*** Reading Table ****
@@ -474,8 +488,6 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
     "Use Union instead of appending lines into table.
     "Use INNER JOIN or LEFT OUTER JOIN on internal table instead of FOR
     " ALL ENTRIES.
-    "
-
 
   ENDMETHOD.
 
@@ -618,53 +630,68 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
 
   METHOD switch_and_cond.
 
+    TYPES:
+      BEGIN OF lty_flight,
+        airlineid     TYPE /dmo/carrier_id,
+        connectionid  TYPE /dmo/connection_id,
+        flightdate    TYPE /dmo/flight_date,
+        price         TYPE /dmo/flight_price,
+        currency_code TYPE /dmo/currency_code,
+        message       TYPE string,
+      END OF lty_flight,
+      ltt_flight TYPE STANDARD TABLE OF lty_flight WITH DEFAULT KEY.
 
+    me->get_flight_data(
+    IMPORTING
+      et_airline     = DATA(lt_airline)
+      et_conn_routes = DATA(lt_conn_routes)
+      et_flight      = DATA(lt_flight) ).
 
+    DATA(lv_shkzg) = `H`.
 
-    "Add FOR, FILTER and REDUCE is possible
+    "SWITCH: Case based differentiation
+    DATA(lv_credit_debit) = SWITCH string( lv_shkzg
+                                           WHEN `H` THEN |Credit|
+                                           WHEN `S` THEN |Debit|
+                                           ELSE space ).
 
-*    DATA(out) = cl_demo_output=>new(
-*      )->next_section( 'Summation'
-*      )->write( REDUCE i( INIT sum = 0
-*                          FOR n = 1 UNTIL n > 10
-*                          NEXT sum = sum + n )
-*      )->next_section( 'Concatenation without THEN'
-*      )->write( REDUCE string( INIT text = `Count up:`
-*                               FOR n = 1 UNTIL n > 10
-*                               NEXT text &&= | { n }| )
-*      )->next_section( 'Concatenation with THEN'
-*      )->write( REDUCE string( INIT text = `Count down:`
-*                               FOR n = 10 THEN n - 1 WHILE n > 0
-*                               NEXT text &&= | { n }| )
-*      )->next_section( 'Non arithmetic expression'
-*      )->write( REDUCE string( INIT text = ``
-*                               FOR t = `x` THEN t && `y`
-*                                           UNTIL strlen( t ) > 10
-*                               NEXT text &&= |{ t } | )
-*      )->display( ).
+    "COND: Condition based differentiation
+    CLEAR lv_credit_debit.
+    lv_credit_debit = COND string( WHEN lv_shkzg = `H` THEN |Credit|
+                                   WHEN lv_shkzg = `S` THEN |Debit|
+                                   ELSE space ).
 
-* Old
-    DATA html_old TYPE string.
-    DATA greeting TYPE string.
-    IF sy-langu = 'D'.
-      greeting = `Hallo Welt!`.
-    ELSE.
-      greeting = `Hello World!`.
-    ENDIF.
-    CONCATENATE `<html>`
-                `<body>`
-                greeting
-                `</body>`
-                `</html>` INTO html_old.
+    "With Methods
+    CLEAR lv_credit_debit.
+    lv_credit_debit = SWITCH string( me->return_h( )
+                                     WHEN `H` THEN me->return_credit( )
+                                     WHEN `S` THEN me->return_debit( )
+                                     ELSE space ).
 
-* New
-    DATA(html_new) =
-         `<html>`
-      && `<body>`
-      && COND #( WHEN sy-langu = 'D' THEN `Hallo Welt!`
-                                     ELSE `Hello World!` )
-      && `</body>`
-      && `</html>`.
+    "With FOR
+    DATA(lt_flight_op) = VALUE ltt_flight( LET lc_aa = `AA` lc_object_key = `Object Key:` IN
+                                           FOR ls_flight
+                                            IN lt_flight
+                                         WHERE ( airlineid    = lc_aa )
+                                               ( airlineid     = ls_flight-airlineid
+                                                 connectionid  = ls_flight-connectionid
+                                                 flightdate    = ls_flight-flightdate
+                                                 price         = ls_flight-seatprice
+                                                 currency_code = ls_flight-currencycode
+                                                 message       = SWITCH #( ls_flight-airlineid
+                                                                           WHEN `AA` THEN `American Airlines Inc.`
+                                                                           WHEN `AC` THEN `Air Canada` ) ) ).
+
+    "With REDUCE
+    DATA(lv_AirlineID) = `AA`.
+
+    DATA(lv_seatprice) = SWITCH /dmo/flight_price( lv_AirlineID
+                                                   WHEN `AA` THEN REDUCE /dmo/flight_price( INIT lv_seat_price = 0
+                                                                                             FOR ls_flight
+                                                                                              IN lt_flight WHERE ( airlineid = lv_AirlineID )
+                                                                                            NEXT lv_seat_price += ls_flight-seatprice )
+                                                   ELSE space ).
+
   ENDMETHOD.
 
   METHOD secondary_sorted_key.
@@ -1201,4 +1228,23 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
     "demo_mesh_loop_at_flights
 
   ENDMETHOD.
+
+  METHOD return_h.
+
+    rv_h = `H`.
+
+  ENDMETHOD.
+
+  METHOD return_credit.
+
+    rv_credit = `Credit`.
+
+  ENDMETHOD.
+
+  METHOD return_debit.
+
+    rv_debit = `Debit`.
+
+  ENDMETHOD.
+
 ENDCLASS.
