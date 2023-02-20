@@ -11,11 +11,15 @@ CLASS zvks_cl_osql_main DEFINITION
   PRIVATE SECTION.
 ENDCLASS.
 
-CLASS zvks_cl_osql_main IMPLEMENTATION.
+
+
+CLASS ZVKS_CL_OSQL_MAIN IMPLEMENTATION.
+
 
   METHOD if_oo_adt_classrun~main.
     me->main( ).
   ENDMETHOD.
+
 
   METHOD main.
 
@@ -29,13 +33,13 @@ CLASS zvks_cl_osql_main IMPLEMENTATION.
     NEW zvks_cl_osql_string( )->main( ).
 
     "Internal Table
-    "NEW zvks_cl_osql_itab( )->main( ).
+    NEW zvks_cl_osql_itab( )->main( ).
 
     "OOABAP
     "NEW zvks_cl_osql_ooabap( )->main( ).
 
     "EML
     "zvks_cl_osql_eml=>execute( ).
-  ENDMETHOD.
 
+  ENDMETHOD.
 ENDCLASS.

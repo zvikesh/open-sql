@@ -1,0 +1,40 @@
+CLASS zvks_cl_osql_vs DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES if_oo_adt_classrun .
+
+    METHODS main
+      IMPORTING
+        out TYPE REF TO if_oo_adt_classrun_out OPTIONAL.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZVKS_CL_OSQL_VS IMPLEMENTATION.
+
+
+  METHOD if_oo_adt_classrun~main.
+    me->main( out ).
+  ENDMETHOD.
+
+
+  METHOD main.
+
+    "Comparisons
+    "MOVE CORRESPONDING VS FOR VS SELECT FROM INTERNAL TABLE
+    "DATA t1 TYPE i.
+    "GET RUN TIME FIELD FINAL(t11).
+    "GET RUN TIME FIELD FINAL(t12).
+    "t1 += t12 - t11. "Microseconds
+
+    "READ TABLE Vs TABLE EXPRESSION Vs FIELD SYMBOLS
+
+  ENDMETHOD.
+ENDCLASS.

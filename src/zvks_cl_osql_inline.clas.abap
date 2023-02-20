@@ -20,7 +20,10 @@ CLASS zvks_cl_osql_inline DEFINITION
 
 ENDCLASS.
 
-CLASS zvks_cl_osql_inline IMPLEMENTATION.
+
+
+CLASS ZVKS_CL_OSQL_INLINE IMPLEMENTATION.
+
 
   METHOD main.
 
@@ -197,12 +200,13 @@ CLASS zvks_cl_osql_inline IMPLEMENTATION.
 
   ENDMETHOD.
 
+
   METHOD if_oo_adt_classrun~main.
     me->main( out ).
   ENDMETHOD.
 
+
   METHOD param_demo.
 
   ENDMETHOD.
-
 ENDCLASS.
