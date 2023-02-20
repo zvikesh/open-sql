@@ -1,2 +1,1 @@
-# open-sql
-SAP Open SQL 7.4+
+# Inline Declaration (ZVKS_CL_OSQL_INLINE)
