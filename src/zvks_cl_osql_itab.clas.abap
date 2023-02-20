@@ -9,7 +9,9 @@ CLASS zvks_cl_osql_itab DEFINITION
         AirlineID   TYPE /dmo/carrier_id,
         AirlineName TYPE /dmo/carrier_name,
       END OF gty_airline,
-      gtt_airline TYPE STANDARD TABLE OF gty_airline WITH DEFAULT KEY,
+      gtt_airline TYPE STANDARD TABLE OF gty_airline WITH DEFAULT KEY
+                  WITH NON-UNIQUE SORTED KEY k_Airline
+                                  COMPONENTS AirlineID,
 
       BEGIN OF gty_conn_routes,
         AirlineID     TYPE /dmo/carrier_id,
@@ -36,6 +38,11 @@ CLASS zvks_cl_osql_itab DEFINITION
 
   PROTECTED SECTION.
   PRIVATE SECTION.
+
+
+
+    METHODS return_lt_flight
+      RETURNING VALUE(rt_flight) TYPE gtt_flight.
 
     METHODS get_flight_data
       EXPORTING
@@ -91,31 +98,19 @@ CLASS zvks_cl_osql_itab DEFINITION
       IMPORTING
         out TYPE REF TO if_oo_adt_classrun_out.
 
-    METHODS reduce_type_inference
-      IMPORTING
-        out TYPE REF TO if_oo_adt_classrun_out.
 
-    METHODS reduce_with_method
-      IMPORTING
-        out TYPE REF TO if_oo_adt_classrun_out.
 
-    METHODS reduce_with_cond
-      IMPORTING
-        out TYPE REF TO if_oo_adt_classrun_out.
 
-    METHODS reduce_with_for
-      IMPORTING
-        out TYPE REF TO if_oo_adt_classrun_out.
+
+
 
     METHODS cte
       IMPORTING
         out TYPE REF TO if_oo_adt_classrun_out.
 
-    METHODS gtt
-      IMPORTING
-        out TYPE REF TO if_oo_adt_classrun_out.
 
-    METHODS cond
+
+    METHODS switch_and_cond
       IMPORTING
         out TYPE REF TO if_oo_adt_classrun_out.
 
@@ -127,48 +122,65 @@ CLASS zvks_cl_osql_itab DEFINITION
       IMPORTING
         out TYPE REF TO if_oo_adt_classrun_out.
 
-    METHODS let
-      IMPORTING
-        out TYPE REF TO if_oo_adt_classrun_out.
-
     METHODS summary
       IMPORTING
         out TYPE REF TO if_oo_adt_classrun_out.
 
 ENDCLASS.
 
-
-
 CLASS zvks_cl_osql_itab IMPLEMENTATION.
 
+  METHOD if_oo_adt_classrun~main.
+    me->main( out ).
+  ENDMETHOD.
 
-  METHOD reduce.
+  METHOD main.
 
-**     Old
-*
-*    DATA sum_old TYPE i.
-*    DATA wa LIKE LINE OF itab.
-*    LOOP AT itab INTO wa.
-*      sum_old = sum_old + wa.
-*    ENDLOOP.
-*
-**     New
-*
-*    DATA(sum_new) = REDUCE i( INIT x = 0
-*                              FOR <wa> IN itab
-*                              NEXT x = x + <wa> ).
+    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    " Looping internal table
+    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    "me->assignment( out ).
+    "me->loop_at_groupby( out ).
+    "me->meshes( out ).
 
+    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    " Secondary Sorted Key with Internal Table
+    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    "me->secondary_sorted_key( out ).
+    "me->table_exprression( out ).
 
-*    DATA itab TYPE TABLE OF i WITH EMPTY KEY.
-*    itab = VALUE #( FOR j = 1 WHILE j <= 10 ( j ) ).
-*    cl_demo_output=>write( itab ).
-*
-*    DATA(sum) = REDUCE i( INIT x = 0 FOR wa IN itab NEXT x += wa ).
+    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    " Copying data from one internal table to another internal table
+    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    "me->base( out ).
+    "me->move_corresponding( out ).
+    "me->corresponding( out ).
+    "me->cl_abap_corresponding( out ).
+    "me->for( out ).
+    "me->filter( out ).
+    "me->reduce( out ).
+
+    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    " Other Operators
+    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    me->cte( out ).
+    "me->cond( out ).
+    "me->switch( out ).
+    "me->conv( out ).
+
+    "lines   Row function
+    "line_index  Index function
+
+    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    " Summary Notes
+    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    me->summary( out ).
 
   ENDMETHOD.
 
-
   METHOD loop_at_groupby.
+
+    DATA lv_seatprice_lag TYPE /dmo/flight_price.
 
     me->get_flight_data(
       IMPORTING
@@ -185,14 +197,15 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
       out->write( |Group Index: { <lfs_flight_group>-group_index }| ).
       out->write( |Group Size: { <lfs_flight_group>-group_size }| ).
 
+      "For aggregation, use REDUCE operator instead
       LOOP AT GROUP <lfs_flight_group> ASSIGNING FIELD-SYMBOL(<lfs_flight>).
-        <lfs_flight>-seatprice += <lfs_flight>-seatprice.
+        lv_seatprice_lag += <lfs_flight>-seatprice.
       ENDLOOP.
 
-      out->write( |{ <lfs_flight>-connectionid } { <lfs_flight>-flightdate COUNTRY = 'IN ' } | &&
-                  |{ <lfs_flight>-seatprice COUNTRY = 'IN ' } { <lfs_flight>-currencycode }| ).
+      out->write( |{ <lfs_flight_group>-airlineid } { lv_seatprice_lag COUNTRY = 'IN ' }| ).
 
       UNASSIGN <lfs_flight>.
+      CLEAR lv_seatprice_lag.
 
       out->write( cl_abap_char_utilities=>newline ).
     ENDLOOP.
@@ -285,63 +298,6 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
 
   ENDMETHOD.
 
-
-  METHOD main.
-
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    " Looping internal table
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    "me->assignment( out ).
-    "me->loop_at_groupby( out ).
-    "me->meshes( out ).
-
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    " Secondary Sorted Key with Internal Table
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    "me->secondary_sorted_key( out ).
-    "me->table_exprression( out ).
-
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    " Copying data from one internal table to another internal table
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    "me->base( out ).
-    "me->move_corresponding( out ).
-    "me->corresponding( out ).
-    "me->cl_abap_corresponding( out ).
-    "me->for( out ).
-    me->filter( out ).
-    me->reduce( out ).
-
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    " Other Operators
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    "me->secondary_sorted_key( out ).
-    "me->table_exprression( out ).
-
-    "me->conv( out ).
-    "me->cond( out ).
-    "me->switch( out ).
-    "me->conv( out )
-
-    "lines   Row function
-    "line_index  Index function
-
-    "Random Integer generator
-*      DATA(rnd) = cl_abap_random_int=>create(
-*               seed = CONV i( sy-uzeit )
-*               min = 1
-*               max = 10 ).
-*
-*    DATA(lv_integer) = rnd->get_next( ).
-*
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    " Summary Notes
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    me->summary( out ).
-
-  ENDMETHOD.
-
-
   METHOD base.
 
     me->get_flight_data(
@@ -371,6 +327,24 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD return_lt_flight.
+
+    SELECT
+      FROM ZVKSR_FlightDetails
+    FIELDS AirlineID,
+           ConnectionID,
+           FlightDate,
+           SeatPrice,
+           CurrencyCode
+         WHERE ( AirlineID EQ `AA` OR
+                 AirlineID EQ `LH` OR
+                 AirlineID EQ `SQ` )
+          INTO TABLE @rt_flight.
+    IF sy-subrc IS NOT INITIAL.
+      CLEAR rt_flight.
+    ENDIF.
+
+  ENDMETHOD.
 
   METHOD get_flight_data.
 
@@ -488,7 +462,13 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
     " FOR + FILTER
     " LOOP AT + READ TABLE
 
-"for Aggregation
+    "*** Looping and Reading Table ****
+    "for Aggregation
+
+    "*** Range Table Creation ****
+    " SELECT with literals
+    " FOR
+    " !!! Do comparison between Select from internal table Vs FOR !!!
 
     "SELECT
     "Use Union instead of appending lines into table.
@@ -499,95 +479,57 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
 
   ENDMETHOD.
 
-
   METHOD cte.
 
-*    WITH
-*      +cities AS ( SELECT cityfrom AS city
-*                     FROM spfli
-*                    WHERE carrid = 'AA'
-*
-*                    UNION DISTINCT
-*
-*                   SELECT cityto AS city
-*                     FROM spfli
-*                    WHERE carrid = 'AA' )
-*
-*      SELECT *
-*             FROM sgeocity
-*             WHERE city IN ( SELECT city FROM +cities )
-*             ORDER BY city
-*             INTO TABLE @DATA(result_new).
+    WITH
+    +airline AS (  SELECT FROM ZVKSR_Airline
+                        FIELDS AirlineID,
+                               AirlineName
+                         WHERE AirlineID EQ `AA`
 
-*    DATA cities TYPE SORTED TABLE OF sgeocity-city
-*            WITH NON-UNIQUE KEY table_line.
-*    SELECT cityfrom
-*           FROM spfli
-*           INTO TABLE cities
-*           WHERE carrid = carrid.
-*    SELECT cityto
-*           FROM spfli
-*           APPENDING TABLE cities
-*           WHERE carrid = carrid.
-*    DELETE ADJACENT DUPLICATES FROM cities.
-*
-*    IF cities IS NOT INITIAL.
-*      SELECT *
-*             FROM sgeocity
-*             INTO TABLE result_old
-*             FOR ALL ENTRIES IN cities
-*             WHERE city = cities-table_line.
-*      SORT result_old BY city.
-*    ENDIF.
+                    UNION DISTINCT
 
+                    SELECT FROM ZVKSR_Airline
+                        FIELDS AirlineID,
+                               AirlineName
+                         WHERE AirlineID EQ `LH`
+
+                    UNION DISTINCT
+
+                    SELECT FROM ZVKSR_Airline
+                        FIELDS AirlineID,
+                               AirlineName
+                         WHERE AirlineID EQ `SQ` ),
+
+    +connecting_routes AS ( SELECT FROM ZVKSR_ConnectingRoutes
+                                 FIELDS AirlineID,
+                                        ConnectionID,
+                                        AirportFromID,
+                                        AirportToID
+                                  WHERE AirlineID IN ( SELECT AirlineID FROM +airline ) )
+
+            SELECT
+              FROM ZVKSR_FlightDetails AS flight
+              INNER JOIN +connecting_routes AS conn_routes
+                      ON conn_routes~AirlineID    = flight~AirlineID
+                     AND conn_routes~ConnectionID = flight~ConnectionID
+            FIELDS flight~AirlineID,
+                   flight~ConnectionID,
+                   flight~FlightDate,
+                   flight~SeatPrice,
+                   flight~CurrencyCode
+              INTO TABLE @DATA(lt_flight).
+    IF sy-subrc IS NOT INITIAL.
+      CLEAR lt_flight.
+    ELSE.
+      out->write( lt_flight ).
+    ENDIF.
 
   ENDMETHOD.
-
 
   METHOD conv.
     "https://www.youtube.com/watch?v=YfK-2_a19bI&list=PLqz8SLrkjv2hWihbrGi4fkI8pNtVed6Zt&index=6
   ENDMETHOD.
-
-
-  METHOD gtt.
-
-**     Old
-*
-*    DATA itab TYPE TABLE OF demo_sumdist_agg WITH EMPTY KEY.
-*    SELECT s~mandt s~carrname p~distid SUM( p~distance ) AS sum_distance
-*           FROM scarr AS s
-*             INNER JOIN spfli AS p ON s~carrid = p~carrid
-*      INTO TABLE itab
-*      GROUP BY s~mandt s~carrname p~distid.
-*    INSERT demo_sumdist_agg FROM TABLE @itab.
-*
-*    SELECT *
-*           FROM demo_sumdist_agg
-*           ORDER BY carrname, distid, sum_distance
-*           INTO TABLE @DATA(result_old).
-*
-*    DELETE FROM demo_sumdist_agg.
-*
-*
-**     New
-*
-*    INSERT demo_sumdist_agg FROM
-*      ( SELECT
-*          FROM scarr AS s
-*            INNER JOIN spfli AS p ON s~carrid = p~carrid
-*          FIELDS s~carrname,
-*                 p~distid,
-*                 SUM( p~distance ) AS sum_distance
-*          GROUP BY s~mandt, s~carrname, p~distid ).
-*
-*    SELECT *
-*           FROM demo_sumdist_agg
-*           ORDER BY carrname, distid, sum_distance
-*           INTO TABLE @DATA(result_new).
-*
-*    DELETE FROM demo_sumdist_agg. "<--- Exception if GTT is not empty at end of program
-  ENDMETHOD.
-
 
   METHOD for.
 
@@ -644,49 +586,62 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
                                          "( message = |{ lc_object_key } { ls_flight-airlineid }{ ls_flight-connectionid }{ ls_flight-flightdate }| )
                                           ).
 
-  ENDMETHOD.
+    "FOR + CORRESPONDING + Built In Function
+    lt_flight_aa = VALUE ltt_flight( LET lc_aa = `AA` ls_base = VALUE lty_flight( message = |Built In fn but it cannot use the ls_flight structure| ) IN
+                                     FOR ls_flight
+                                      IN lt_flight
+                                   WHERE ( airlineid    = lc_aa )
+                                         ( CORRESPONDING #( BASE ( ls_base ) ls_flight
+                                                            MAPPING price = seatprice
+                                                             EXCEPT AirlineID ) ) ).
 
+    "Create Range
+    DATA rt_airline_id TYPE RANGE OF /dmo/carrier_id.
 
-  METHOD reduce_type_inference.
+    DELETE ADJACENT DUPLICATES FROM lt_flight COMPARING airlineid.
 
-*    DATA txt TYPE c LENGTH 20.
-*    DATA num TYPE i.
-*
-*    demo=>meth1( p = REDUCE #( INIT r1 = txt
-*                               FOR i = 1
-*                               UNTIL i > 9
-*                               NEXT r1 &&= 'x' ) ).
-*    demo=>meth1( p = REDUCE #( INIT r2 = num
-*                               FOR i = 1
-*                               UNTIL i > 9
-*                               NEXT r2 += 1 ) ).
-*    cl_demo_output=>line( ).
-*
-*    demo=>meth2( p = REDUCE #( INIT r1 = txt
-*                               FOR i = 1
-*                               UNTIL i > 9
-*                               NEXT r1 &&= 'x' ) ).
-*    "demo=>meth2( p = REDUCE #( INIT r2 = num
-*    "                           FOR i = 1
-*    "                           UNTIL i > 9
-*    "                           NEXT r2 +=+ 1 ) ). "not possible
-*    cl_demo_output=>line( ).
-*
-*    demo=>meth3( p = REDUCE #( INIT r1 = txt
-*                               FOR i = 1
-*                               UNTIL i > 9
-*                               NEXT r1 &&= 'x' ) ).
-*    demo=>meth3( p = REDUCE #( INIT r2 = num
-*                               FOR i = 1
-*                               UNTIL i > 9
-*                               NEXT r2 += 1 ) ) ##type.
+    rt_airline_id = VALUE #( FOR ls_flight
+                             IN lt_flight
+                             ( sign = 'I'
+                               option = 'EQ'
+                               low = ls_flight-airlineid ) ).
+
+    "Use Class Method in FOR
+    rt_airline_id = VALUE #( FOR ls_flight
+                             IN me->return_lt_flight( )
+                             ( sign = 'I'
+                               option = 'EQ'
+                               low = ls_flight-airlineid ) ).
 
   ENDMETHOD.
 
 
-  METHOD cond.
+  METHOD switch_and_cond.
+
+
+
 
     "Add FOR, FILTER and REDUCE is possible
+
+*    DATA(out) = cl_demo_output=>new(
+*      )->next_section( 'Summation'
+*      )->write( REDUCE i( INIT sum = 0
+*                          FOR n = 1 UNTIL n > 10
+*                          NEXT sum = sum + n )
+*      )->next_section( 'Concatenation without THEN'
+*      )->write( REDUCE string( INIT text = `Count up:`
+*                               FOR n = 1 UNTIL n > 10
+*                               NEXT text &&= | { n }| )
+*      )->next_section( 'Concatenation with THEN'
+*      )->write( REDUCE string( INIT text = `Count down:`
+*                               FOR n = 10 THEN n - 1 WHILE n > 0
+*                               NEXT text &&= | { n }| )
+*      )->next_section( 'Non arithmetic expression'
+*      )->write( REDUCE string( INIT text = ``
+*                               FOR t = `x` THEN t && `y`
+*                                           UNTIL strlen( t ) > 10
+*                               NEXT text &&= |{ t } | )
+*      )->display( ).
 
 * Old
     DATA html_old TYPE string.
@@ -711,92 +666,6 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
       && `</body>`
       && `</html>`.
   ENDMETHOD.
-
-
-  METHOD reduce_with_for.
-
-*    DATA(result) = REDUCE result(
-*                     INIT res = VALUE result( max  = 0
-*                                              text = `Result: ` )
-*                          sep  = ``
-*                     FOR <wa> IN itab
-*                     NEXT res-text &&= sep && <wa>-id
-*                          res-sum += <wa>-num
-*                          res-max = nmax( val1 = res-max
-*                                          val2 = <wa>-num )
-*                          sep     = `-` ).
-*
-*    cl_demo_output=>display( result ).
-
-*    TYPES:
-*      BEGIN OF line,
-*        col1 TYPE i,
-*        col2 TYPE i,
-*      END OF line,
-*      BEGIN OF line1,
-*        col1 TYPE i,
-*        col2 TYPE STANDARD TABLE OF line WITH EMPTY KEY,
-*      END OF line1,
-*      itab1 TYPE STANDARD TABLE OF line1 WITH EMPTY KEY,
-*      BEGIN OF line2,
-*        col1 TYPE i,
-*        col2 TYPE i,
-*        col3 TYPE i,
-*      END OF line2.
-*
-*    DATA(out) = cl_demo_output=>new( ).
-*
-*    DATA(itab1) = VALUE itab1(
-*      ( col1 = 1 col2 = VALUE line1-col2( ( col1 = 111 col2 = 112 )
-*                                          ( col1 = 121 col2 = 122 ) ) )
-*      ( col1 = 2 col2 = VALUE line1-col2( ( col1 = 211 col2 = 212 )
-*                                          ( col1 = 221 col2 = 222 ) ) )
-*      ( col1 = 3 col2 = VALUE line1-col2( ( col1 = 311 col2 = 312 )
-*                                          ( col1 = 321 col2 = 322 ) ) )
-*                             ).
-*    LOOP AT itab1 INTO DATA(line1).
-*      out->write( name = |ITAB1, Line { sy-tabix }, COL2|
-*                  data = line1-col2 ).
-*    ENDLOOP.
-*
-*    DATA(result) = REDUCE string(
-*      INIT text TYPE string
-*      FOR wa1 IN itab1
-*      FOR wa2 IN wa1-col2
-*      NEXT text =
-*             |{ text } { wa1-col1 }, { wa2-col1 }, { wa2-col2 }\n| ).
-*    out->write_html( `<b>Result</b>`
-*      )->write(  result  ).
-
-  ENDMETHOD.
-
-
-  METHOD reduce_with_method.
-
-*    DATA wa       TYPE scarr.
-*    DATA text     TYPE string.
-*    DATA carriers TYPE TABLE OF scarr.
-*
-*    SELECT * FROM scarr INTO TABLE @carriers.
-*
-*    DATA out TYPE REF TO if_demo_output.
-*    out = REDUCE #(
-*            INIT o = cl_demo_output=>new( )
-*            FOR wa IN carriers
-*            NEXT o = o->write( to_string( wa ) ) ).
-*    out->display( ).
-*
-*    DO.
-*      ASSIGN COMPONENT sy-index OF STRUCTURE wa TO FIELD-SYMBOL(<wa>).
-*      IF sy-subrc <> 0.
-*        EXIT.
-*      ENDIF.
-*      DESCRIBE FIELD <wa> OUTPUT-LENGTH DATA(olen).
-*      text = |{ text }{ CONV string( <wa> ) WIDTH = olen + 2 }|.
-*    ENDDO.
-
-  ENDMETHOD.
-
 
   METHOD secondary_sorted_key.
 
@@ -832,32 +701,6 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
     ENDIF.
 
   ENDMETHOD.
-
-
-  METHOD reduce_with_cond.
-
-*    DATA(out) = cl_demo_output=>new(
-*      )->next_section( 'Summation'
-*      )->write( REDUCE i( INIT sum = 0
-*                          FOR n = 1 UNTIL n > 10
-*                          NEXT sum = sum + n )
-*      )->next_section( 'Concatenation without THEN'
-*      )->write( REDUCE string( INIT text = `Count up:`
-*                               FOR n = 1 UNTIL n > 10
-*                               NEXT text &&= | { n }| )
-*      )->next_section( 'Concatenation with THEN'
-*      )->write( REDUCE string( INIT text = `Count down:`
-*                               FOR n = 10 THEN n - 1 WHILE n > 0
-*                               NEXT text &&= | { n }| )
-*      )->next_section( 'Non arithmetic expression'
-*      )->write( REDUCE string( INIT text = ``
-*                               FOR t = `x` THEN t && `y`
-*                                           UNTIL strlen( t ) > 10
-*                               NEXT text &&= |{ t } | )
-*      )->display( ).
-
-  ENDMETHOD.
-
 
   METHOD table_exprression.
 
@@ -1064,13 +907,143 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
                                                         MAPPING price = seatprice
                                                                 currency_code = currencycode ) ) ) TO lt_flight_diff_type.
 
+    "Use Class Method in FOR
+    lt_flight_same_type = FILTER zvks_cl_osql_itab=>gtt_flight( me->return_lt_flight( ) "LOOP AT...
+                                                                "EXCEPT                 "IF SY-SUBRC <> 0.
+                                                             IN lt_airline              "READ TABLE...WITH...BINARY SEARCH
+                                                      USING KEY k_AirlineID
+                                                          WHERE airlineid = airlineid ).
+
   ENDMETHOD.
 
+  METHOD reduce.
 
-  METHOD if_oo_adt_classrun~main.
-    me->main( out ).
+    TYPES:
+      BEGIN OF lty_airline_price,
+        airline_id     TYPE /dmo/carrier_id,
+        tot_seat_price TYPE /dmo/flight_price,
+      END OF lty_airline_price,
+      ltt_airline_price TYPE STANDARD TABLE OF lty_airline_price WITH DEFAULT KEY.
+
+    DATA lt_airline_price TYPE ltt_airline_price.
+
+    TYPES:
+      BEGIN OF lty_airline_aa,
+        AirlineID   TYPE /dmo/carrier_id,
+        AirlineName TYPE /dmo/carrier_name,
+      END OF lty_airline_aa,
+      ltt_airline_aa TYPE STANDARD TABLE OF lty_airline_aa WITH DEFAULT KEY
+                     WITH NON-UNIQUE SORTED KEY k_AirlineID
+                                     COMPONENTS AirlineID.
+
+    DATA lt_airline_aa TYPE ltt_airline_aa.
+
+    DATA lv_seatprice_lagb TYPE /dmo/flight_price.
+
+    me->get_flight_data(
+      IMPORTING
+        et_airline = DATA(lt_airline)
+        et_flight  = DATA(lt_flight) ).
+
+    "Perform aggregation on the same table
+    LOOP AT lt_flight ASSIGNING FIELD-SYMBOL(<lfs_flight_dummy>)
+                                GROUP BY ( airlineid   = <lfs_flight_dummy>-airlineid
+                                           group_size  = GROUP SIZE
+                                           group_index = GROUP INDEX )
+                      ASCENDING
+                      ASSIGNING FIELD-SYMBOL(<lfs_flight_group>).
+
+      out->write( <lfs_flight_group>-airlineid ).
+      out->write( |Group Index: { <lfs_flight_group>-group_index }| ).
+      out->write( |Group Size: { <lfs_flight_group>-group_size }| ).
+
+      " LOOP AT GROUP <lfs_flight_group> ASSIGNING FIELD-SYMBOL(<lfs_flight>).
+      "   lv_seatprice_lagb += <lfs_flight>-seatprice.
+      " ENDLOOP.
+      "
+      " APPEND VALUE lty_airline_price( airline_id = <lfs_flight_group>-airlineid tot_seat_price = lv_seatprice_lagb ) TO lt_airline_price.
+      " UNASSIGN <lfs_flight>.
+      " CLEAR lv_seatprice_lagb.
+
+      DATA(lv_seatprice_reduce) = REDUCE /dmo/flight_price( INIT lv_seat_price = 0
+                                                             FOR ls_flight
+                                                              IN lt_flight WHERE ( airlineid = <lfs_flight_group>-airlineid )
+                                                            NEXT lv_seat_price += ls_flight-seatprice ).
+      "NEXT lv_string += lv_string && ',' && ls_flight-connectionid ).
+
+      APPEND VALUE lty_airline_price( airline_id = <lfs_flight_group>-airlineid tot_seat_price = lv_seatprice_reduce ) TO lt_airline_price.
+      CLEAR lv_seatprice_reduce.
+    ENDLOOP.
+
+    out->write( cl_abap_char_utilities=>newline ).
+    out->write( lt_airline_price ).
+
+    "Perform aggregation on Item Table using Header table
+    "1. Operation needs to be performed for each header item separately.
+    CLEAR lt_airline_price.
+    LOOP AT lt_airline ASSIGNING FIELD-SYMBOL(<lfs_airline>).
+
+      DATA(lv_seatprice) = REDUCE /dmo/flight_price( INIT lv_seat_price = 0
+                                                      FOR ls_flight
+                                                       IN lt_flight WHERE ( airlineid = <lfs_airline>-airlineid )
+                                                     NEXT lv_seat_price += ls_flight-seatprice ).
+
+      "*** Calling API for every single aggregation ***
+
+      APPEND VALUE lty_airline_price( airline_id = <lfs_airline>-airlineid tot_seat_price = lv_seatprice ) TO lt_airline_price.
+      CLEAR lv_seatprice.
+    ENDLOOP.
+
+    out->write( cl_abap_char_utilities=>newline ).
+    out->write( lt_airline_price ).
+
+    "Perform aggregation on Item Table using Header table
+    "2. Operation can be performed on all aggregated values all together.
+    CLEAR lt_airline_price.
+
+    lt_airline_price = VALUE #( FOR ls_airline
+                                 IN lt_airline
+                                    ( airline_id     = ls_airline-airlineid
+                                      tot_seat_price = REDUCE /dmo/flight_price( INIT lv_seat_price = 0
+                                                                                  FOR ls_flight
+                                                                                   IN lt_flight
+                                                                                WHERE ( airlineid = ls_airline-airlineid )
+                                                                                 NEXT lv_seat_price += ls_flight-seatprice ) ) ).
+
+    out->write( cl_abap_char_utilities=>newline ).
+    out->write( lt_airline_price ).
+
+    "Practice: What would be output ?
+    CLEAR lt_airline_price.
+
+    APPEND LINES OF VALUE ltt_airline_aa( ( AirlineID = `AA` AirlineName = `American Airlines Inc.` ) ) TO lt_airline_aa.
+
+    lt_airline_price = VALUE #( FOR ls_airline
+                                 IN lt_airline
+                                    ( airline_id     = ls_airline-airlineid
+                                      tot_seat_price = REDUCE /dmo/flight_price( INIT lv_seat_price = 0
+                                                                                  FOR ls_flight
+                                                                                   IN FILTER zvks_cl_osql_itab=>gtt_flight( lt_flight
+                                                                                                                         IN lt_airline_aa
+                                                                                                                  USING KEY k_AirlineID
+                                                                                                                      WHERE AirlineID = AirlineID )
+                                                                                WHERE ( airlineid = ls_airline-airlineid )
+                                                                                 NEXT lv_seat_price += ls_flight-seatprice ) ) ).
+
+    out->write( cl_abap_char_utilities=>newline ).
+    out->write( lt_airline_price ).
+
+    "Use Class Method in REDUCE
+    DATA(lo_random) = cl_abap_random_int=>create( seed = CONV i( cl_abap_context_info=>get_system_time( ) )
+                                                  min  = 1
+                                                  max  = 10 ).
+
+    DATA(lv_seatprice_aa) = REDUCE /dmo/flight_price( INIT lv_seat_price = lo_random->get_next( )
+                                                       FOR ls_flight
+                                                        IN lt_flight WHERE ( airlineid = `AA` )
+                                                      NEXT lv_seat_price += ls_flight-seatprice ).
+
   ENDMETHOD.
-
 
   METHOD corresponding.
 
@@ -1146,12 +1119,6 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
 
   ENDMETHOD.
 
-
-  METHOD let.
-
-  ENDMETHOD.
-
-
   METHOD meshes.
 
     "The full power of meshes will become more clear in the moment when associations will be
@@ -1173,13 +1140,13 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
     TYPES:
       BEGIN OF MESH lmt_flight,
         airline           TYPE ltt_airline
-             ASSOCIATION _conn_routes TO connecting_routes
-                      ON AirlineID = AirlineID,
+         ASSOCIATION _conn_routes TO connecting_routes
+                  ON AirlineID = AirlineID,
 
         connecting_routes TYPE ltt_conn_routes
-             ASSOCIATION _flight TO flight
-                      ON AirlineID    = AirlineID
-                     AND ConnectionID = ConnectionID,
+         ASSOCIATION _flight TO flight
+                  ON AirlineID    = AirlineID
+                 AND ConnectionID = ConnectionID,
 
         flight            TYPE ltt_flight,
       END OF MESH lmt_flight.
