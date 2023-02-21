@@ -8,4 +8,4 @@
 
 # Internal Table (ZVKS_CL_OSQL_ITAB)
 
-# Object Oriented Programming (ZVKS_CL_OSQL_ITAB)
+# Object Oriented Programming (ZVKS_CL_OSQL_OOABAP)
