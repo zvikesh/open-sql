@@ -7,3 +7,5 @@
 # String Operations (ZVKS_CL_OSQL_SELECT)
 
 # Internal Table (ZVKS_CL_OSQL_ITAB)
+
+# Object Oriented Programming (ZVKS_CL_OSQL_ITAB)
