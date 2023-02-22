@@ -20,9 +20,7 @@ CLASS zvks_cl_osql_inline DEFINITION
 
 ENDCLASS.
 
-
-
-CLASS ZVKS_CL_OSQL_INLINE IMPLEMENTATION.
+CLASS zvks_cl_osql_inline IMPLEMENTATION.
 
 
   METHOD main.
@@ -30,7 +28,6 @@ CLASS ZVKS_CL_OSQL_INLINE IMPLEMENTATION.
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     " Inline Structure in SELECT
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
     SELECT SINGLE
       FROM ZVKSR_FlightDetails AS flight
     FIELDS flight~AirlineID,
@@ -53,7 +50,6 @@ CLASS ZVKS_CL_OSQL_INLINE IMPLEMENTATION.
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     " Inline Table in SELECT
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
     SELECT
       FROM ZVKSR_FlightDetails AS flight
     FIELDS flight~AirlineID,
@@ -76,7 +72,6 @@ CLASS ZVKS_CL_OSQL_INLINE IMPLEMENTATION.
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     " Work Area
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
     LOOP AT lt_flight INTO DATA(ls_flight).
       out->write( |ls_flight{ cl_abap_char_utilities=>newline }| ).
       out->write( ls_flight ).
@@ -86,7 +81,6 @@ CLASS ZVKS_CL_OSQL_INLINE IMPLEMENTATION.
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     " Field Symbol
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
     LOOP AT lt_flight ASSIGNING FIELD-SYMBOL(<lfs_flight>).
       out->write( |<lfs_sflight>{ cl_abap_char_utilities=>newline }| ).
       out->write( ls_flight ).
@@ -96,7 +90,6 @@ CLASS ZVKS_CL_OSQL_INLINE IMPLEMENTATION.
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     " Reference Object
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
     LOOP AT lt_flight REFERENCE INTO DATA(lr_flight).
       out->write( |lr_slfight{ cl_abap_char_utilities=>newline }| ).
       out->write( lr_flight ).
@@ -138,20 +131,22 @@ CLASS ZVKS_CL_OSQL_INLINE IMPLEMENTATION.
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     " Local Object
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    DATA(lo_http_destination) = cl_http_destination_provider=>create_by_url( 'www.odata_srv' ).
+    TRY.
+        DATA(lo_http_destination) = cl_http_destination_provider=>create_by_url( 'www.odata_srv' ).
+      CATCH cx_http_dest_provider_error.
+    ENDTRY.
 
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     " Method Importing Parameter
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     me->param_demo(
       IMPORTING
-        ev_variable = DATA(lv_variable) "*** CAN NOT BE DONW WITH FUNCTION MODULE ***"
+        ev_variable = DATA(lv_variable) "*** CAN NOT BE DONE WITH FUNCTION MODULE ***"
     ).
 
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     " Application of inline structure or table using VALUE operator
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
     DATA(lt_flight_db) = VALUE /dmo/t_flight( ).
 
     APPEND LINES OF VALUE /dmo/t_flight( ( carrier_id    = 'AA'
@@ -179,10 +174,9 @@ CLASS ZVKS_CL_OSQL_INLINE IMPLEMENTATION.
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     " Immutable Variables
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
     FINAL(lc_user_id) = cl_abap_context_info=>get_user_technical_name( ).
 
-*    lc_user_id = 'NEWID'.  "Syntax Error
+    "lc_user_id = 'NEWID'.  " !!! Syntax Error !!!
 
     "Use Case - Declare ConstanTs using Inline Declaration
     SELECT SINGLE
@@ -200,13 +194,12 @@ CLASS ZVKS_CL_OSQL_INLINE IMPLEMENTATION.
 
   ENDMETHOD.
 
-
   METHOD if_oo_adt_classrun~main.
     me->main( out ).
   ENDMETHOD.
 
 
   METHOD param_demo.
-
+    "Do nothing
   ENDMETHOD.
 ENDCLASS.
