@@ -36,54 +36,23 @@ CLASS zvks_cl_osql_string DEFINITION
 
 ENDCLASS.
 
-
-
-CLASS ZVKS_CL_OSQL_STRING IMPLEMENTATION.
-
-
-  METHOD regex_matcher.
-
-*    DATA email TYPE string VALUE `mr.important@sap.com`.
-*    cl_demo_input=>request( CHANGING field = email ).
-*
-** Old
-*    DATA(matcher) =
-*      cl_abap_matcher=>create(
-*        pattern     = `\w+(\.\w+)*@(\w+\.)+(\w{2,4})`
-*        ignore_case = abap_true
-*        text        = email ).
-*
-*    DATA(match) = matcher->match( ).
-*
-*    IF match = abap_true.
-*      cl_demo_output=>write( 'yes' ).
-*    ELSE.
-*      cl_demo_output=>write( 'no' ).
-*    ENDIF.
-*
-** New
-*    cl_demo_output=>write(
-*      COND #( WHEN matches( val   = email
-*                            regex = `\w+(\.\w+)*@(\w+\.)+(\w{2,4})`
-*                            case  = abap_false )
-*                THEN 'yes'
-*                ELSE 'no' ) ).
-
-  ENDMETHOD.
-
+CLASS zvks_cl_osql_string IMPLEMENTATION.
 
   METHOD main.
 
-*    me->concatenation( out ).
-*    me->parallel_bars_concatenation( out ).
-*    me->embedded_expression( out ).
-*    me->built_in_string_fn( out ).
+    "me->concatenation( out ).
+    "me->parallel_bars_concatenation( out ).
+    "me->embedded_expression( out ).
+    "me->built_in_string_fn( out ).
 
-    "WIP
+    "*** WIP ***
     "me->regex_matcher( out ).
 
   ENDMETHOD.
 
+  METHOD if_oo_adt_classrun~main.
+    me->main( out ).
+  ENDMETHOD.
 
   METHOD concatenation.
 
@@ -99,7 +68,6 @@ CLASS ZVKS_CL_OSQL_STRING IMPLEMENTATION.
     out->write( to_upper( lv_var1 && lv_var2 && lv_var3 && lv_var4 ) ).
 
   ENDMETHOD.
-
 
   METHOD built_in_string_fn.
 
@@ -331,8 +299,34 @@ CLASS ZVKS_CL_OSQL_STRING IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD regex_matcher.
 
-  METHOD if_oo_adt_classrun~main.
-    me->main( out ).
+*    DATA email TYPE string VALUE `mr.important@sap.com`.
+*    cl_demo_input=>request( CHANGING field = email ).
+*
+** Old
+*    DATA(matcher) =
+*      cl_abap_matcher=>create(
+*        pattern     = `\w+(\.\w+)*@(\w+\.)+(\w{2,4})`
+*        ignore_case = abap_true
+*        text        = email ).
+*
+*    DATA(match) = matcher->match( ).
+*
+*    IF match = abap_true.
+*      cl_demo_output=>write( 'yes' ).
+*    ELSE.
+*      cl_demo_output=>write( 'no' ).
+*    ENDIF.
+*
+** New
+*    cl_demo_output=>write(
+*      COND #( WHEN matches( val   = email
+*                            regex = `\w+(\.\w+)*@(\w+\.)+(\w{2,4})`
+*                            case  = abap_false )
+*                THEN 'yes'
+*                ELSE 'no' ) ).
+
   ENDMETHOD.
+
 ENDCLASS.

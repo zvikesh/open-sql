@@ -156,17 +156,16 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
     "me->move_corresponding( out ).
     "me->corresponding( out ).
     "me->cl_abap_corresponding( out ).
-    "me->for( out ).
-    "me->filter( out ).
-    "me->reduce( out ).
+    "me->for( out ).                        "Modify with Field Symbols
+    "me->filter( out ).                     "Modify with Field Symbols
+    me->reduce( out ).                     "Modify with Field Symbols
 
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     " Other Operators
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    me->cte( out ).
-    "me->cond( out ).
-    "me->switch( out ).
-    "me->conv( out ).
+    "me->cte( out ).                        "ZVKS_CL_OSQL_SELECT
+    "me->switch_and_cond( out ).
+    me->conv( out ).
 
     "lines   Row function
     "line_index  Index function
@@ -321,9 +320,6 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
     out->write( lt_flight_final ).
 
   ENDMETHOD.
-
-
-
 
   METHOD return_lt_flight.
 
@@ -625,6 +621,13 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
                                option = 'EQ'
                                low = ls_flight-airlineid ) ).
 
+    "Field Symbols
+    rt_airline_id = VALUE #( FOR <lfs_flight>
+                              IN me->return_lt_flight( )
+                                 ( sign = 'I'
+                                   option = 'EQ'
+                                   low = <lfs_flight>-airlineid ) ).
+
   ENDMETHOD.
 
 
@@ -900,7 +903,7 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
     "TARGET and SOURCE with Different Type using FOR + FILTER with Built-In Functions
     DATA(lt_flight_diff_type) = VALUE ltt_flight( LET lc_object_key = `Object Key:` IN
                                                   FOR ls_flight
-                                                  IN FILTER zvks_cl_osql_itab=>gtt_flight( lt_flight               "LOOP AT...
+                                                  IN  FILTER zvks_cl_osql_itab=>gtt_flight( lt_flight               "LOOP AT...
                                                                                            "EXCEPT                 "IF SY-SUBRC <> 0.
                                                                                         IN lt_airline              "READ TABLE...WITH...BINARY SEARCH
                                                                                  USING KEY k_AirlineID
@@ -921,7 +924,7 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
                                                                                WHERE airlineid = airlineid )
                                            ( CORRESPONDING #( ls_flight
                                                               MAPPING price = seatprice
-                                                                            currency_code = currencycode ) ) ).
+                                                                      currency_code = currencycode ) ) ).
 
     "Avoid the records instead of Overwriting
     APPEND LINES OF VALUE ltt_flight( FOR ls_flight

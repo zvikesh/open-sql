@@ -163,6 +163,7 @@ CLASS ZVKS_CL_OSQL_SELECT IMPLEMENTATION.
 *    METHODS sql_select_offset.
 *    METHODS sql_select_window_exp.
 *    METHODS sql_select_nulls_last.
+*    https://blogs.sap.com/2023/02/17/special-abap-sql-expression-null/
 
   ENDMETHOD.
 

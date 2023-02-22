@@ -15,11 +15,9 @@ ENDCLASS.
 
 CLASS zvks_cl_osql_main IMPLEMENTATION.
 
-
   METHOD if_oo_adt_classrun~main.
     me->main( ).
   ENDMETHOD.
-
 
   METHOD main.
 
