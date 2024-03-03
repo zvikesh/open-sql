@@ -695,6 +695,12 @@ CLASS zvks_cl_osql_itab IMPLEMENTATION.
                                                                                             NEXT lv_seat_price += ls_flight-seatprice )
                                                    ELSE space ).
 
+"Excception can also be thrown in Condition and Switch statements as below
+"                req_type      = SWITCH #( ls_appserver_data-requirements
+"                                          WHEN 'VSF' THEN ls_appserver_data-requirements
+"                                          ELSE THROW zcl_cx_dyn_msg( MESSAGE e018(zptp_msg) WITH ls_appserver_data-requirements ) ) "Invalid value &1
+"                "00 or Z2
+
   ENDMETHOD.
 
   METHOD secondary_sorted_key.
