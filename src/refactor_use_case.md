@@ -67,10 +67,4 @@
                               ASCENDING
                               ( "index   = <lfs_gr_product_plant>-group_index
                                 product = <lfs_gr_product_plant>-product ) ).
-
-    "DATA(lv_utcl_end) = utclong_current( ).
-    GET TIME STAMP FIELD DATA(lv_tstmp_end).
-
-    out->write( |Unique Products { lines( lt_product ) }| ).
-    out->write( |Execution Time (7.5 Operators) { cl_abap_tstmp=>subtract( tstmp1 = lv_tstmp_end tstmp2 = lv_tstmp_start ) }| ).
 ```
