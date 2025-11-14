@@ -37,7 +37,7 @@
 
     "1. Create a table lt_product with unique Materials as per 7.5 Operators.
 
-    "2. Create a table lt_product with unique Materials FOR GROUPS opeator on lt_product_plant grouping by product field.
+    "2. Create a table lt_product with unique materials using FOR GROUPS opeator on lt_product_plant grouping by product field sorted by products in ascending order.
 
  
   ENDMETHOD.
