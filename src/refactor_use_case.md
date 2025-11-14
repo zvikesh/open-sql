@@ -29,19 +29,11 @@
     "-----------------------------------------------------------------
     " Create a table with unique Materials - Classic Approach
     "-----------------------------------------------------------------
-    CLEAR: lt_product, lv_tstmp_start, lv_tstmp_end.
-
-    GET TIME STAMP FIELD lv_tstmp_start.
+    CLEAR: lt_product.
 
     lt_product = CORRESPONDING #( lt_product_plant ).
-
     SORT lt_product BY product.
     DELETE ADJACENT DUPLICATES FROM lt_product COMPARING product.
-
-    GET TIME STAMP FIELD lv_tstmp_end.
-
-    out->write( |Unique Products { lines( lt_product ) }| ).
-    out->write( |Execution Time (Classic Approach) { cl_abap_tstmp=>subtract( tstmp1 = lv_tstmp_end tstmp2 = lv_tstmp_start ) }| ).
 
     "1. Create a table lt_product with unique Materials as per 7.5 Operators.
 
@@ -54,11 +46,6 @@
 ### Expected Refactored Code
 
 ```
-    "-----------------------------------------------------------------
-    " Create a table with unique Materials - 7.5 Operators
-    "-----------------------------------------------------------------
-    GET TIME STAMP FIELD DATA(lv_tstmp_start).
-
     lt_product = VALUE #( FOR GROUPS <lfs_gr_product_plant> OF <lfs_product_plant>
                            IN lt_product_plant
                               GROUP BY ( product = <lfs_product_plant>-product
